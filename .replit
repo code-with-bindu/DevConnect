@@ -56,6 +56,7 @@ externalPort = 8000
 exposeLocalhost = true
 
 [deployment]
-deploymentTarget = "static"
-build = ["sh", "-c", "cd DevConnect-FE && npm install && npm run build"]
+deploymentTarget = "vm"
+build = ["sh", "-c", "cd DevConnect-BE && npm install && cd ../DevConnect-FE && npm install && npm run build"]
 publicDir = "DevConnect-FE/dist"
+run = ["sh", "-c", "cd DevConnect-BE && NODE_ENV=production node app.js"]
