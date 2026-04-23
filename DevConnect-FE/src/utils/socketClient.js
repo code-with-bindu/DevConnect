@@ -23,7 +23,10 @@ export const initializeSocket = (userId) => {
     return socket;
   }
 
-  socket = io(BASE_URL, {
+  // Connect to current origin; vite proxies /socket.io -> backend in dev,
+  // and the same-origin in production assumes the API is served alongside.
+  socket = io({
+    path: "/socket.io",
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,

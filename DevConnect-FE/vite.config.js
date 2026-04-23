@@ -7,5 +7,18 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5000,
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        ws: true,
+        rewrite: (p) => p.replace(/^\/api/, ''),
+      },
+      '/socket.io': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
 })
