@@ -14,6 +14,53 @@ const Feed = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchActive, setSearchActive] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState(null);
+  const [pendingIds, setPendingIds] = useState({}); // userId -> "connect"|"sent"
+
+  const runSearch = async (q) => {
+    const term = (q ?? searchTerm).trim();
+    if (!term) {
+      setSearchResults([]);
+      setSearchActive(false);
+      return;
+    }
+    try {
+      setSearching(true);
+      setSearchError(null);
+      setSearchActive(true);
+      const res = await axios.get(`${BASE_URL}/users/search`, {
+        params: { q: term },
+        withCredentials: true,
+      });
+      setSearchResults(res?.data?.data || []);
+    } catch (err) {
+      setSearchError(err.response?.data?.message || err.message);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const sendConnect = async (userId) => {
+    try {
+      setPendingIds((p) => ({ ...p, [userId]: "connect" }));
+      await axios.post(
+        `${BASE_URL}/requests/send/interested/${userId}`,
+        {},
+        { withCredentials: true }
+      );
+      setPendingIds((p) => ({ ...p, [userId]: "sent" }));
+    } catch (err) {
+      console.log(err.message);
+      setPendingIds((p) => {
+        const n = { ...p };
+        delete n[userId];
+        return n;
+      });
+    }
+  };
 
   const getFeed = async () => {
     if (feed.length > 0) {
@@ -56,11 +103,16 @@ const Feed = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
+              const v = e.target.value;
+              setSearchTerm(v);
               setCurrentIndex(0);
+              if (!v.trim()) {
+                setSearchActive(false);
+                setSearchResults([]);
+              }
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") setSearchActive(true);
+              if (e.key === "Enter") runSearch();
             }}
             placeholder="Search developers by name..."
             className="flex-1 py-4 px-2 text-base md:text-lg text-neutral-800 placeholder-neutral-400 bg-transparent focus:outline-none"
@@ -81,7 +133,7 @@ const Feed = () => {
             </button>
           )}
           <button
-            onClick={() => setSearchActive(true)}
+            onClick={() => runSearch()}
             className="m-2 px-5 md:px-6 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,6 +196,127 @@ const Feed = () => {
             <p className="text-xl font-semibold text-neutral-700">Finding awesome developers...</p>
             <p className="text-neutral-500 mt-2">This might take a moment</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Search Results View (global search across all users)
+  if (searchActive && searchTerm.trim()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 py-12 pt-32 px-4">
+        <div className="section-container">
+          {PageHeader}
+          {SearchBar}
+          <p className="text-sm text-neutral-600 -mt-6 mb-8 text-center">
+            {searching ? (
+              <span>Searching for "<span className="font-semibold">{searchTerm}</span>"...</span>
+            ) : searchError ? (
+              <span className="text-red-600">{searchError}</span>
+            ) : (
+              <>
+                Showing <span className="font-bold text-primary-600">{searchResults.length}</span>{" "}
+                {searchResults.length === 1 ? "result" : "results"} for{" "}
+                <span className="font-semibold text-neutral-900">"{searchTerm}"</span>
+              </>
+            )}
+          </p>
+
+          {searching ? (
+            <div className="text-center py-16">
+              <div className="inline-block w-12 h-12 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
+            </div>
+          ) : searchResults.length === 0 ? (
+            <div className="card-elevated p-10 text-center max-w-md mx-auto">
+              <div className="text-6xl mb-4">🔍</div>
+              <h2 className="text-2xl font-bold text-neutral-900 mb-2">No developers found</h2>
+              <p className="text-neutral-600 mb-6">
+                We couldn't find anyone matching{" "}
+                <span className="font-semibold">"{searchTerm}"</span>.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setSearchActive(false);
+                  setSearchResults([]);
+                }}
+                className="btn-outline"
+              >
+                Clear Search
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {searchResults.map((u) => {
+                const pending = pendingIds[u._id];
+                return (
+                  <div key={u._id} className="card-elevated overflow-hidden hover-lift animate-pop-in">
+                    <div className="relative h-56 overflow-hidden bg-gradient-to-br from-neutral-100 to-neutral-200">
+                      <img
+                        src={u.photoUrl || "https://placehold.co/400x300"}
+                        alt={u.firstName}
+                        className="w-full h-full object-cover"
+                      />
+                      {u.isConnection && (
+                        <span className="absolute top-3 right-3 px-3 py-1 bg-green-500/95 backdrop-blur text-white text-xs font-bold rounded-full shadow-lg">
+                          ✓ Connected
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-neutral-900">
+                        {u.firstName} {u.lastName || ""}
+                      </h3>
+                      <p className="text-sm text-neutral-500 mt-1">
+                        {u.age ? `${u.age} • ` : ""}
+                        {u.gender || ""}
+                      </p>
+                      <p className="text-sm text-neutral-600 mt-3 line-clamp-2">
+                        {u.about || "No bio yet."}
+                      </p>
+                      {Array.isArray(u.skills) && u.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {u.skills.slice(0, 4).map((s, i) => (
+                            <span
+                              key={i}
+                              className="text-xs px-2 py-1 bg-primary-50 text-primary-700 rounded-full font-medium"
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-5 flex gap-2">
+                        {u.isConnection ? (
+                          <Link
+                            to={`/chat/${u._id}`}
+                            className="btn-primary flex-1 text-center text-sm"
+                          >
+                            💬 Message
+                          </Link>
+                        ) : pending === "sent" ? (
+                          <button
+                            disabled
+                            className="flex-1 px-4 py-2 bg-green-100 text-green-700 font-semibold rounded-lg text-sm"
+                          >
+                            ✓ Request Sent
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => sendConnect(u._id)}
+                            disabled={pending === "connect"}
+                            className="btn-primary flex-1 text-sm disabled:opacity-60"
+                          >
+                            {pending === "connect" ? "Sending..." : "🤝 Connect"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );

@@ -10,6 +10,7 @@ import Connections from "./components/Connections";
 import Requests from "./components/Requests";
 import Chat from "./components/Chat";
 import Notifications from "./components/Notifications";
+import Projects from "./components/Projects";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="user/requests/received" element={<Requests />} />
             <Route path="chat/:userId" element={<Chat />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="projects" element={<Projects />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -27,6 +27,7 @@ const NavBar = () => {
 
   const navLinks = [
     { label: "Home", path: "/", icon: "🏠" },
+    { label: "Projects", path: "/projects", icon: "🚀" },
     { label: "Connections", path: "/user/connections", icon: "👥" },
     { label: "Requests", path: "/user/requests/received", icon: "📬" },
   ];
