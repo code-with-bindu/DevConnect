@@ -42,21 +42,88 @@ const Feed = () => {
     setCurrentIndex((prev) => prev + 1);
   };
 
+  const SearchBar = (
+    <div className="max-w-2xl mx-auto mb-10 animate-slide-up">
+      <div className="relative group">
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 rounded-2xl blur opacity-25 group-hover:opacity-60 group-focus-within:opacity-75 transition duration-500"></div>
+        <div className="relative flex items-center bg-white rounded-2xl shadow-xl border border-white/40 overflow-hidden">
+          <div className="pl-5 pr-2 text-primary-500">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentIndex(0);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") setSearchActive(true);
+            }}
+            placeholder="Search developers by name..."
+            className="flex-1 py-4 px-2 text-base md:text-lg text-neutral-800 placeholder-neutral-400 bg-transparent focus:outline-none"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSearchActive(false);
+                setCurrentIndex(0);
+              }}
+              className="mr-2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition"
+              aria-label="Clear search"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+          <button
+            onClick={() => setSearchActive(true)}
+            className="m-2 px-5 md:px-6 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+            </svg>
+            <span className="hidden sm:inline">Search</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const PageHeader = (
+    <div className="text-center mb-10 animate-slide-down">
+      <div className="inline-block mb-4">
+        <span className="badge-primary">🔥 Discover Mode</span>
+      </div>
+      <h1 className="text-5xl md:text-6xl font-black text-gradient mb-4">
+        Discover Developers
+      </h1>
+      <p className="text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
+        Explore amazing developers in your network and connect with those who match your interests
+      </p>
+    </div>
+  );
+
   // Error State
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 flex items-center justify-center pt-32 px-4">
-        <div className="max-w-md w-full animate-slide-up">
-          <div className="card-elevated p-8 text-center">
-            <div className="text-6xl mb-4 animate-bounce">⚠️</div>
-            <h2 className="text-2xl font-bold text-neutral-900 mb-3">Oops! Something went wrong</h2>
-            <p className="text-neutral-600 mb-6 leading-relaxed">{error}</p>
-            <button
-              onClick={() => getFeed()}
-              className="btn-primary w-full"
-            >
-              Try Again
-            </button>
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 py-12 pt-32 px-4">
+        <div className="section-container">
+          {PageHeader}
+          {SearchBar}
+          <div className="max-w-md w-full mx-auto animate-slide-up">
+            <div className="card-elevated p-8 text-center">
+              <div className="text-6xl mb-4 animate-bounce">⚠️</div>
+              <h2 className="text-2xl font-bold text-neutral-900 mb-3">Oops! Something went wrong</h2>
+              <p className="text-neutral-600 mb-6 leading-relaxed">{error}</p>
+              <button onClick={() => getFeed()} className="btn-primary w-full">
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -66,13 +133,17 @@ const Feed = () => {
   // Loading State
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 flex items-center justify-center pt-32">
-        <div className="text-center">
-          <div className="inline-block mb-6">
-            <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 py-12 pt-32 px-4">
+        <div className="section-container">
+          {PageHeader}
+          {SearchBar}
+          <div className="text-center">
+            <div className="inline-block mb-6">
+              <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-xl font-semibold text-neutral-700">Finding awesome developers...</p>
+            <p className="text-neutral-500 mt-2">This might take a moment</p>
           </div>
-          <p className="text-xl font-semibold text-neutral-700">Finding awesome developers...</p>
-          <p className="text-neutral-500 mt-2">This might take a moment</p>
         </div>
       </div>
     );
@@ -81,28 +152,26 @@ const Feed = () => {
   // Empty State (no developers at all)
   if (feed.length === 0 || (!searchTerm.trim() && currentIndex >= feed.length)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 flex flex-col items-center justify-center px-4 pt-32">
-        <div className="max-w-md w-full text-center animate-slide-up">
-          <div className="text-8xl mb-6 animate-float">🎉</div>
-          <h1 className="text-4xl md:text-5xl font-black text-gradient mb-4">
-            All Caught Up!
-          </h1>
-          <p className="text-lg text-neutral-600 mb-10 leading-relaxed">
-            You've reviewed all available profiles. Check back later or explore your connections!
-          </p>
-          <div className="space-y-3">
-            <Link
-              to="/user/connections"
-              className="btn-primary block w-full text-center"
-            >
-              View Connections
-            </Link>
-            <Link
-              to="/"
-              className="btn-outline block w-full text-center"
-            >
-              Back to Feed
-            </Link>
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 py-12 pt-32 px-4">
+        <div className="section-container">
+          {PageHeader}
+          {SearchBar}
+          <div className="max-w-md w-full mx-auto text-center animate-slide-up">
+            <div className="text-8xl mb-6 animate-float">🎉</div>
+            <h1 className="text-4xl md:text-5xl font-black text-gradient mb-4">
+              All Caught Up!
+            </h1>
+            <p className="text-lg text-neutral-600 mb-10 leading-relaxed">
+              You've reviewed all available profiles. Check back later or explore your connections!
+            </p>
+            <div className="space-y-3">
+              <Link to="/user/connections" className="btn-primary block w-full text-center">
+                View Connections
+              </Link>
+              <Link to="/" className="btn-outline block w-full text-center">
+                Back to Feed
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -131,76 +200,15 @@ const Feed = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 py-12 pt-32 px-4 md:py-16">
       <div className="section-container">
-        {/* Header Section */}
-        <div className="text-center mb-10 animate-slide-down">
-          <div className="inline-block mb-4">
-            <span className="badge-primary">🔥 Discover Mode</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black text-gradient mb-4">
-            Discover Developers
-          </h1>
-          <p className="text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
-            Explore amazing developers in your network and connect with those who match your interests
+        {PageHeader}
+        {SearchBar}
+        {term && (
+          <p className="text-sm text-neutral-600 -mt-6 mb-8 text-center">
+            Showing <span className="font-bold text-primary-600">{visibleFeed.length}</span>{" "}
+            {visibleFeed.length === 1 ? "match" : "matches"} for{" "}
+            <span className="font-semibold text-neutral-900">"{searchTerm}"</span>
           </p>
-        </div>
-
-        {/* Search Bar */}
-        <div className="max-w-2xl mx-auto mb-10 animate-slide-up">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 rounded-2xl blur opacity-25 group-hover:opacity-60 group-focus-within:opacity-75 transition duration-500"></div>
-            <div className="relative flex items-center bg-white rounded-2xl shadow-xl border border-white/40 overflow-hidden">
-              <div className="pl-5 pr-2 text-primary-500">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentIndex(0);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") setSearchActive(true);
-                }}
-                placeholder="Search developers by name..."
-                className="flex-1 py-4 px-2 text-base md:text-lg text-neutral-800 placeholder-neutral-400 bg-transparent focus:outline-none"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSearchActive(false);
-                    setCurrentIndex(0);
-                  }}
-                  className="mr-2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition"
-                  aria-label="Clear search"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-              <button
-                onClick={() => setSearchActive(true)}
-                className="m-2 px-5 md:px-6 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
-                </svg>
-                <span className="hidden sm:inline">Search</span>
-              </button>
-            </div>
-          </div>
-          {term && (
-            <p className="text-sm text-neutral-600 mt-3 text-center">
-              Showing <span className="font-bold text-primary-600">{visibleFeed.length}</span>{" "}
-              {visibleFeed.length === 1 ? "match" : "matches"} for{" "}
-              <span className="font-semibold text-neutral-900">"{searchTerm}"</span>
-            </p>
-          )}
-        </div>
+        )}
 
         {/* Progress Bar */}
         {visibleFeed.length > 0 && (
