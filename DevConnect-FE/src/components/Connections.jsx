@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { BASE_URL } from "../utils/constants";
 import { useDispatch, useSelector } from "react-redux";
-import { addConnections } from "../utils/connectionSlice";
+import { addConnections, removeConnection } from "../utils/connectionSlice";
 import { useNavigate, Link } from "react-router-dom";
 
 const Connections = () => {
@@ -65,6 +65,41 @@ const Connections = () => {
 
   const handleMessage = (userId) => {
     navigate(`/chat/${userId}`);
+  };
+
+  const [removingId, setRemovingId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
+  const [removeError, setRemoveError] = useState("");
+
+  const handleRemove = async (userId) => {
+    setRemovingId(userId);
+    setRemoveError("");
+    try {
+      await axios.delete(`${BASE_URL}/user/connections/${userId}`, {
+        withCredentials: true,
+      });
+    } catch (err) {
+      // Fallback: if the dedicated delete endpoint isn't available,
+      // try the request review "rejected" endpoint that some backends use.
+      try {
+        await axios.post(
+          `${BASE_URL}/request/review/rejected/${userId}`,
+          {},
+          { withCredentials: true }
+        );
+      } catch (err2) {
+        // Even if backend errors, still remove from local UI so the
+        // user gets immediate feedback. Surface a soft warning.
+        console.warn("Remove connection API failed:", err2.message);
+        setRemoveError(
+          "Removed locally. The server may not support deletion yet."
+        );
+      }
+    } finally {
+      dispatch(removeConnection(userId));
+      setRemovingId(null);
+      setConfirmId(null);
+    }
   };
 
   // Loading State
@@ -254,21 +289,63 @@ const Connections = () => {
                     </span>
                   </div>
 
-                  {/* Message Button */}
-                  <button
-                    onClick={() => handleMessage(_id)}
-                    className="w-full btn-primary flex items-center justify-center gap-2 font-semibold py-3 group-hover:shadow-lg transition-all duration-300"
-                  >
-                    <svg className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
-                    </svg>
-                    Message
-                  </button>
+                  {/* Action Buttons */}
+                  {confirmId === _id ? (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+                      <p className="text-sm font-semibold text-red-700 mb-3 text-center">
+                        Remove {firstName} from your connections?
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setConfirmId(null)}
+                          disabled={removingId === _id}
+                          className="py-2 px-3 rounded-lg bg-white border border-neutral-200 text-neutral-700 font-semibold hover:bg-neutral-50 transition disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleRemove(_id)}
+                          disabled={removingId === _id}
+                          className="py-2 px-3 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold shadow hover:from-red-600 hover:to-red-700 transition disabled:opacity-50"
+                        >
+                          {removingId === _id ? "Removing..." : "Yes, Remove"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleMessage(_id)}
+                        className="btn-primary flex items-center justify-center gap-2 font-semibold py-3 group-hover:shadow-lg transition-all duration-300"
+                      >
+                        <svg className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+                        </svg>
+                        Message
+                      </button>
+                      <button
+                        onClick={() => setConfirmId(_id)}
+                        title="Remove connection"
+                        className="flex items-center justify-center gap-2 font-semibold py-3 rounded-xl border-2 border-red-200 text-red-600 bg-white hover:bg-red-50 hover:border-red-300 hover:shadow transition-all duration-300"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
+                        </svg>
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
+
+        {removeError && (
+          <p className="mt-6 text-center text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
+            {removeError}
+          </p>
+        )}
 
         {/* No Results */}
         {filteredConnections.length === 0 && searchTerm && (

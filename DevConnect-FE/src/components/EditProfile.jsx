@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { addUser } from "../utils/userSlice";
 import { BASE_URL } from "../utils/constants";
 
-const isValidPhotoUrl = (url) =>
-  /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024; // 2MB
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 const EditProfile = () => {
   const user = useSelector((store) => store.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -26,18 +27,10 @@ const EditProfile = () => {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [dirtyFields, setDirtyFields] = useState({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  // DEBUG: Log when component mounts and when user data changes
   useEffect(() => {
-    console.log("📝 EditProfile Component Mounted");
-    console.log("👤 Current User Data:", user);
-  }, []);
-
-  // Update form whenever user data changes
-  useEffect(() => {
-    console.log("🔄 User data changed:", user);
     if (user) {
-      console.log("✅ User exists, updating form with user data");
       setForm({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
@@ -46,15 +39,61 @@ const EditProfile = () => {
         gender: user.gender || "",
         about: user.about || "",
       });
-    } else {
-      console.warn("⚠️ User is null/undefined, form will show loading state");
     }
   }, [user]);
 
+  const markDirty = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setDirtyFields((prev) => ({
+      ...prev,
+      [name]: value !== (user ? user[name] : ""),
+    }));
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    setDirtyFields((prev) => ({ ...prev, [name]: value !== user[name] }));
+    markDirty(name, value);
+  };
+
+  const handlePhotoFile = (file) => {
+    setError("");
+    if (!file) return;
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setError("Please choose a JPG, PNG, GIF, or WEBP image.");
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError("Image is too large. Please choose one under 2 MB.");
+      return;
+    }
+    setUploadingPhoto(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      markDirty("photoUrl", reader.result);
+      setUploadingPhoto(false);
+    };
+    reader.onerror = () => {
+      setError("Could not read that image. Please try a different file.");
+      setUploadingPhoto(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onFileInputChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    handlePhotoFile(file);
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    handlePhotoFile(file);
+  };
+
+  const removePhoto = () => {
+    markDirty("photoUrl", "");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const saveProfile = async () => {
@@ -68,138 +107,269 @@ const EditProfile = () => {
       return;
     }
 
-    if (updatedData.photoUrl && !isValidPhotoUrl(updatedData.photoUrl)) {
-      setError(
-        "Please provide a valid image URL (jpg, jpeg, png, gif, webp)."
-      );
-      return;
-    }
-
     try {
       setLoading(true);
       setError("");
       setSuccess("");
 
-      const res = await axios.patch(
-        BASE_URL + "/profile/edit",
-        updatedData,
-        { withCredentials: true }
-      );
+      const res = await axios.patch(BASE_URL + "/profile/edit", updatedData, {
+        withCredentials: true,
+      });
 
       dispatch(addUser(res?.data?.data));
-      setSuccess(res?.data?.message || "Profile updated successfully! ✅");
+      setSuccess(res?.data?.message || "Profile updated successfully!");
       setLoading(false);
 
       setTimeout(() => {
         setSuccess("");
         navigate("/profile/view");
-      }, 2000);
+      }, 1500);
     } catch (err) {
-      setError(err.response?.data || err.message);
+      setError(
+        typeof err.response?.data === "string"
+          ? err.response.data
+          : err.response?.data?.message || err.message
+      );
       setLoading(false);
     }
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 via-white to-neutral-50 pt-32 px-4">
+        <div className="card-elevated p-10 text-center">
+          <div className="inline-block mb-4">
+            <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
+          </div>
+          <p className="text-neutral-700 font-semibold">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const previewUrl = form.photoUrl || "https://placehold.co/300x300?text=Photo";
+
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 p-6 md:p-10 space-y-8 md:space-y-0 md:space-x-8">
-      {!user ? (
-        // Loading state
-        <div className="w-full flex items-center justify-center">
-          <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-            <div className="mb-4 text-4xl">⏳</div>
-            <p className="text-gray-700 font-medium">Loading your profile...</p>
-            <p className="text-gray-500 text-sm mt-4">Check console for debug info</p>
-            {/* DEBUG: Show what's in Redux */}
-            <div className="mt-6 bg-gray-100 p-4 rounded-lg text-left text-xs">
-              <p className="font-mono text-gray-600">
-                Redux user: {user === null ? "null" : "undefined"}
+    <div className="min-h-screen bg-gradient-to-br from-primary-50/40 via-white to-accent-50/40 py-12 pt-32 px-4">
+      <div className="section-container">
+        {/* Header */}
+        <div className="text-center mb-10 animate-slide-down">
+          <span className="badge-primary mb-4 inline-block">✨ Profile Studio</span>
+          <h1 className="text-4xl md:text-6xl font-black text-gradient mb-3">
+            Edit Your Profile
+          </h1>
+          <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+            Make your profile shine — update your photo, story, and details.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Form */}
+          <div className="lg:col-span-3 animate-slide-up">
+            <div className="card-elevated p-6 md:p-10">
+              {error && (
+                <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 font-medium animate-slide-up">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-700 font-medium animate-slide-up">
+                  {success}
+                </div>
+              )}
+
+              {/* Photo Uploader */}
+              <div className="mb-8">
+                <label className="block text-sm font-bold text-neutral-700 mb-3">
+                  Profile Photo
+                </label>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={onDrop}
+                  className="relative flex flex-col sm:flex-row items-center gap-5 p-5 rounded-2xl border-2 border-dashed border-primary-200 bg-gradient-to-br from-primary-50/40 to-accent-50/40 hover:border-primary-400 transition"
+                >
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full blur opacity-40"></div>
+                    <img
+                      src={previewUrl}
+                      alt="Profile preview"
+                      className="relative w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg"
+                    />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="font-semibold text-neutral-800">
+                      Upload a profile photo
+                    </p>
+                    <p className="text-sm text-neutral-500 mb-4">
+                      JPG, PNG, GIF or WEBP — up to 2 MB. Drag & drop or browse.
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPhoto}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white font-semibold shadow hover:shadow-lg hover:scale-105 active:scale-95 transition disabled:opacity-60"
+                      >
+                        {uploadingPhoto ? "Uploading..." : "Choose from File Manager"}
+                      </button>
+                      {form.photoUrl && (
+                        <button
+                          type="button"
+                          onClick={removePhoto}
+                          className="px-4 py-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-700 font-semibold hover:bg-neutral-50 transition"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif,image/webp"
+                      onChange={onFileInputChange}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-bold text-neutral-700 mb-2">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={form.firstName}
+                    onChange={handleChange}
+                    placeholder="Jane"
+                    className="input-base px-4 py-3 w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-neutral-700 mb-2">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={handleChange}
+                    placeholder="Doe"
+                    className="input-base px-4 py-3 w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-neutral-700 mb-2">
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    name="age"
+                    value={form.age}
+                    onChange={handleChange}
+                    placeholder="25"
+                    className="input-base px-4 py-3 w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-neutral-700 mb-2">
+                    Gender
+                  </label>
+                  <select
+                    name="gender"
+                    value={form.gender}
+                    onChange={handleChange}
+                    className="input-base px-4 py-3 w-full"
+                  >
+                    <option value="">Select...</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-neutral-700 mb-2">
+                    About
+                  </label>
+                  <textarea
+                    name="about"
+                    value={form.about}
+                    onChange={handleChange}
+                    placeholder="Tell other developers about yourself..."
+                    rows={4}
+                    className="input-base px-4 py-3 w-full resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 mt-8">
+                <button
+                  onClick={saveProfile}
+                  disabled={loading}
+                  className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-primary-500 via-accent-500 to-primary-600 text-white font-bold text-base shadow-lg hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Saving..." : "Save Profile"}
+                </button>
+                <button
+                  onClick={() => navigate("/profile/view")}
+                  className="px-6 py-3.5 rounded-xl bg-white border-2 border-neutral-200 text-neutral-700 font-bold hover:bg-neutral-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Preview */}
+          <div className="lg:col-span-2 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+            <div className="lg:sticky lg:top-28">
+              <div className="relative">
+                <div className="absolute -inset-4 bg-gradient-to-r from-primary-500/30 to-accent-500/30 rounded-3xl blur-2xl"></div>
+                <div className="relative card-elevated overflow-hidden">
+                  <div className="h-28 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-600"></div>
+                  <div className="px-6 pb-8 -mt-16 text-center">
+                    <img
+                      src={previewUrl}
+                      alt="Profile"
+                      className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-white shadow-xl"
+                    />
+                    <h3 className="text-2xl font-black text-neutral-900 mt-4">
+                      {form.firstName || "Your"} {form.lastName || "Name"}
+                    </h3>
+                    <p className="text-sm text-neutral-500 mt-1 font-medium">
+                      {form.age && <span>🎂 {form.age} years</span>}
+                      {form.age && form.gender && <span> · </span>}
+                      {form.gender && (
+                        <span>💼 {form.gender.charAt(0).toUpperCase() + form.gender.slice(1)}</span>
+                      )}
+                    </p>
+                    <p className="text-neutral-600 mt-4 leading-relaxed text-sm italic">
+                      "{form.about || "Tell the world a little about yourself..."}"
+                    </p>
+                    <div className="flex justify-center gap-2 mt-5">
+                      <span className="px-3 py-1 bg-primary-100 text-primary-700 text-xs font-semibold rounded-full border border-primary-200">
+                        💻 Developer
+                      </span>
+                      <span className="px-3 py-1 bg-accent-100 text-accent-700 text-xs font-semibold rounded-full border border-accent-200">
+                        🌟 DevConnect
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-center text-xs text-neutral-500 mt-4">
+                Live preview · Updates as you type
               </p>
             </div>
           </div>
         </div>
-      ) : (
-        <>
-          {/* Left Side: Edit Form */}
-          <div className="w-full md:w-1/2 bg-white p-8 rounded-2xl shadow-lg">
-        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
-          Edit Profile
-        </h2>
-
-        {error && (
-          <p className="text-red-500 mb-4 font-medium text-center">{error}</p>
-        )}
-        {success && (
-          <p className="text-green-500 mb-4 font-medium text-center">{success}</p>
-        )}
-
-        <div className="space-y-4">
-          {/* Floating label input style */}
-          {[
-            { label: "First Name", name: "firstName", type: "text" },
-            { label: "Last Name", name: "lastName", type: "text" },
-            { label: "Photo URL", name: "photoUrl", type: "text" },
-            { label: "Age", name: "age", type: "number" },
-            { label: "Gender", name: "gender", type: "text" },
-          ].map((field) => (
-            <div key={field.name} className="relative">
-              <input
-                type={field.type}
-                name={field.name}
-                value={form[field.name]}
-                onChange={handleChange}
-                placeholder=" "
-                className="w-full px-4 pt-5 pb-2 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-              />
-              <label className="absolute top-1 left-4 text-gray-400 text-sm transition-all duration-200 pointer-events-none">
-                {field.label}
-              </label>
-            </div>
-          ))}
-
-          {/* About textarea */}
-          <div className="relative">
-            <textarea
-              name="about"
-              value={form.about}
-              onChange={handleChange}
-              placeholder=" "
-              rows={4}
-              className="w-full px-4 pt-5 pb-2 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition resize-none"
-            />
-            <label className="absolute top-1 left-4 text-gray-400 text-sm transition-all duration-200 pointer-events-none">
-              About
-            </label>
-          </div>
-        </div>
-
-        <button
-          onClick={saveProfile}
-          disabled={loading}
-          className="w-full mt-6 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl shadow-lg hover:scale-105 transform transition-all duration-300 disabled:opacity-50"
-        >
-          {loading ? "Saving..." : "Save Profile"}
-        </button>
       </div>
-
-      {/* Right Side: Live Preview Card */}
-      <div className="w-full md:w-1/3 bg-white p-6 rounded-2xl shadow-lg text-center flex flex-col items-center">
-        <div className="relative">
-          <img
-            src={form.photoUrl || user?.photoUrl || "https://placehold.co/150"}
-            alt="profile"
-            className="w-40 h-40 rounded-full mx-auto mb-4 object-cover border-4 border-indigo-300"
-          />
-        </div>
-        <h3 className="text-2xl font-bold text-gray-800">
-          {form.firstName || user?.firstName} {form.lastName || user?.lastName}
-        </h3>
-        <p className="text-gray-500 mt-2 text-center">{form.about || user?.about}</p>
-        <p className="text-sm text-gray-400 mt-1">
-          {form.age || user?.age} | {form.gender || user?.gender}
-        </p>
-      </div>
-        </>
-      )}
     </div>
   );
 };
