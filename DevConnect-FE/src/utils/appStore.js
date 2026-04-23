@@ -5,6 +5,8 @@ import connectionReducer from "./connectionSlice";
 import requestReducer from "./requestSlice";
 import notificationReducer from "./notificationSlice";
 import activeConversationReducer from "./activeConversationSlice";
+import presenceReducer from "./presenceSlice";
+import toastReducer from "./toastSlice";
 
 const appStore = configureStore({
   reducer: {
@@ -14,6 +16,8 @@ const appStore = configureStore({
     requests: requestReducer,
     notification: notificationReducer,
     activeConversation: activeConversationReducer,
+    presence: presenceReducer,
+    toast: toastReducer,
   },
 });
 

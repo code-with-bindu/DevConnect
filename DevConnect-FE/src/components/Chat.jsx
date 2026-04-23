@@ -12,6 +12,9 @@ import {
   onMessageSent,
   offMessageSent,
   initializeSocket,
+  emitTyping,
+  onTyping,
+  offTyping,
 } from "../utils/socketClient";
 import {
   setActiveConversation,
@@ -40,6 +43,11 @@ const Chat = () => {
 
   // State for messages
   const [messages, setMessages] = useState([]);
+  const [theyAreTyping, setTheyAreTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
+  const lastTypingSentRef = useRef(0);
+  const onlineIds = useSelector((s) => s.presence?.onlineIds || []);
+  const isOnline = onlineIds.includes(targetUserId);
   const [messageText, setMessageText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [targetUser, setTargetUser] = useState(null);
@@ -72,12 +80,20 @@ const Chat = () => {
     // Join the chat room
     joinChat(currentUserId, targetUserId);
 
+    // Listen for typing indicator from the other user
+    onTyping(({ userId, isTyping }) => {
+      if (userId === targetUserId) setTheyAreTyping(!!isTyping);
+    });
+
     // Set this as the active conversation (for unread tracking)
     dispatch(setActiveConversation(targetUserId));
 
     return () => {
       // Leave room when component unmounts
       leaveChat(currentUserId, targetUserId);
+      offTyping();
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      emitTyping(currentUserId, targetUserId, false);
 
       // Clear active conversation
       dispatch(clearActiveConversation());
@@ -310,8 +326,22 @@ const Chat = () => {
               />
             )}
             <div>
-              <h1 className="font-bold text-neutral-900">{targetUser?.firstName} {targetUser?.lastName}</h1>
-              <p className="text-xs text-neutral-500">Active now</p>
+              <h1 className="font-bold text-neutral-900 flex items-center gap-2">
+                {targetUser?.firstName} {targetUser?.lastName}
+                <span
+                  className={`inline-block w-2.5 h-2.5 rounded-full ${
+                    isOnline ? "bg-green-500 animate-pulse" : "bg-neutral-300"
+                  }`}
+                  title={isOnline ? "Online" : "Offline"}
+                ></span>
+              </h1>
+              <p className="text-xs text-neutral-500 h-4">
+                {theyAreTyping
+                  ? `${targetUser?.firstName || "User"} is typing...`
+                  : isOnline
+                  ? "Active now"
+                  : "Offline"}
+              </p>
             </div>
           </div>
           <button
@@ -380,7 +410,19 @@ const Chat = () => {
         <div className="max-w-4xl mx-auto flex gap-3 items-end">
           <textarea
             value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
+            onChange={(e) => {
+              setMessageText(e.target.value);
+              const now = Date.now();
+              if (now - lastTypingSentRef.current > 1500) {
+                emitTyping(currentUserId, targetUserId, true);
+                lastTypingSentRef.current = now;
+              }
+              if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+              typingTimeoutRef.current = setTimeout(() => {
+                emitTyping(currentUserId, targetUserId, false);
+                lastTypingSentRef.current = 0;
+              }, 1800);
+            }}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
             className="input-base flex-1 resize-none max-h-24 text-sm"

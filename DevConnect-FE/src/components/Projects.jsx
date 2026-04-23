@@ -3,6 +3,10 @@ import axios from "axios";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
+import {
+  onProjectActivity,
+  offProjectActivity,
+} from "../utils/socketClient";
 
 const CATEGORIES = [
   "All",
@@ -48,6 +52,7 @@ const Projects = () => {
   const [form, setForm] = useState(emptyForm);
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState(null);
+  const [activity, setActivity] = useState([]); // last few real-time events
 
   const fetchProjects = async () => {
     try {
@@ -71,6 +76,20 @@ const Projects = () => {
 
   useEffect(() => {
     fetchProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, tab]);
+
+  // Real-time activity ticker + auto-refresh of project list
+  useEffect(() => {
+    const handler = (evt) => {
+      setActivity((prev) => [evt, ...prev].slice(0, 8));
+      // If a brand new project was created OR someone applied, refresh quietly
+      if (evt.kind === "created" || evt.kind === "applied") {
+        fetchProjects();
+      }
+    };
+    onProjectActivity(handler);
+    return () => offProjectActivity();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, tab]);
 
@@ -166,6 +185,36 @@ const Projects = () => {
             startup ideas — or post your own and recruit a team.
           </p>
         </div>
+
+        {/* Live activity ticker */}
+        {activity.length > 0 && (
+          <div className="max-w-4xl mx-auto mb-6 bg-white/70 backdrop-blur border border-white/40 rounded-2xl shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-2 border-b border-neutral-100 bg-gradient-to-r from-primary-50 to-accent-50">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-primary-700">
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                LIVE
+              </span>
+              <span className="text-xs text-neutral-500">Real-time activity</span>
+            </div>
+            <ul className="divide-y divide-neutral-100 max-h-44 overflow-y-auto">
+              {activity.map((evt, i) => (
+                <li key={i} className="flex items-center gap-3 px-4 py-2 text-sm animate-slide-down">
+                  {evt.by?.photoUrl ? (
+                    <img src={evt.by.photoUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                  ) : (
+                    <span className="text-lg">{evt.kind === "created" ? "🚀" : "🤝"}</span>
+                  )}
+                  <span className="flex-1 text-neutral-700 truncate">
+                    <span className="font-semibold">{evt.by?.firstName || "Someone"}</span>{" "}
+                    {evt.kind === "created" ? "posted" : "applied to"}{" "}
+                    <span className="font-semibold text-neutral-900">"{evt.title}"</span>
+                  </span>
+                  <span className="text-xs text-neutral-400">just now</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Search + create */}
         <div className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row gap-3">

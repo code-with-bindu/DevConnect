@@ -8,6 +8,7 @@ import UserCard from "./UserCard";
 
 const Feed = () => {
   const feed = useSelector((store) => store.feed) || [];
+  const onlineIds = useSelector((store) => store.presence?.onlineIds || []);
   const dispatch = useDispatch();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -257,11 +258,19 @@ const Feed = () => {
                         alt={u.firstName}
                         className="w-full h-full object-cover"
                       />
-                      {u.isConnection && (
-                        <span className="absolute top-3 right-3 px-3 py-1 bg-green-500/95 backdrop-blur text-white text-xs font-bold rounded-full shadow-lg">
-                          ✓ Connected
-                        </span>
-                      )}
+                      <div className="absolute top-3 right-3 flex gap-2">
+                        {onlineIds.includes(u._id) && (
+                          <span className="flex items-center gap-1 px-2 py-1 bg-white/95 backdrop-blur text-neutral-800 text-xs font-bold rounded-full shadow">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            Online
+                          </span>
+                        )}
+                        {u.isConnection && (
+                          <span className="px-3 py-1 bg-green-500/95 backdrop-blur text-white text-xs font-bold rounded-full shadow-lg">
+                            ✓ Connected
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="p-5">
                       <h3 className="text-xl font-bold text-neutral-900">

@@ -7,6 +7,7 @@ import { useNavigate, Link } from "react-router-dom";
 
 const Connections = () => {
   const connections = useSelector((store) => store.connections) || [];
+  const onlineIds = useSelector((store) => store.presence?.onlineIds || []);
   const [isLoading, setIsLoading] = useState(true);
   const [filteredConnections, setFilteredConnections] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -247,11 +248,16 @@ const Connections = () => {
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                  {/* Status Badge */}
-                  <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-full shadow-lg border border-white/30 group-hover:scale-110 transition-transform duration-300">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs font-bold text-neutral-900">Online</span>
-                  </div>
+                  {/* Live Status Badge */}
+                  {(() => {
+                    const isOn = onlineIds.includes(_id);
+                    return (
+                      <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-full shadow-lg border border-white/30 group-hover:scale-110 transition-transform duration-300">
+                        <div className={`w-2 h-2 rounded-full ${isOn ? "bg-green-500 animate-pulse" : "bg-neutral-400"}`}></div>
+                        <span className="text-xs font-bold text-neutral-900">{isOn ? "Online" : "Offline"}</span>
+                      </div>
+                    );
+                  })()}
 
                   {/* Achievement Badge */}
                   <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

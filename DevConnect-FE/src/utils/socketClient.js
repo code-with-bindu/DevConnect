@@ -156,6 +156,58 @@ export const offNewMessageNotification = () => {
 };
 
 /**
+ * Ask the server for the current online roster (called once on connect)
+ */
+export const requestOnlineUsers = () => {
+  if (socket) socket.emit("getOnlineUsers");
+};
+export const onOnlineUsers = (cb) => socket && socket.on("onlineUsers", cb);
+export const offOnlineUsers = () => socket && socket.off("onlineUsers");
+
+/**
+ * Typing indicator helpers
+ */
+export const emitTyping = (userId, targetUserId, isTyping) => {
+  if (socket) socket.emit("typing", { userId, targetUserId, isTyping });
+};
+export const onTyping = (cb) => socket && socket.on("typing", cb);
+export const offTyping = () => socket && socket.off("typing");
+
+/**
+ * Project real-time event helpers
+ */
+export const onProjectActivity = (cb) =>
+  socket && socket.on("projectActivity", cb);
+export const offProjectActivity = () =>
+  socket && socket.off("projectActivity");
+
+export const onProjectInterest = (cb) =>
+  socket && socket.on("projectInterest", cb);
+export const offProjectInterest = () =>
+  socket && socket.off("projectInterest");
+
+export const onProjectDecision = (cb) =>
+  socket && socket.on("projectDecision", cb);
+export const offProjectDecision = () =>
+  socket && socket.off("projectDecision");
+
+/**
+ * Connection request real-time event helpers
+ */
+export const onConnectionRequestNew = (cb) =>
+  socket && socket.on("connectionRequestNew", cb);
+export const offConnectionRequestNew = () =>
+  socket && socket.off("connectionRequestNew");
+
+export const onConnectionRequestDecision = (cb) =>
+  socket && socket.on("connectionRequestDecision", cb);
+export const offConnectionRequestDecision = () =>
+  socket && socket.off("connectionRequestDecision");
+
+export const offUserStatusUpdate = () =>
+  socket && socket.off("userStatusUpdate");
+
+/**
  * Disconnect socket
  * Called when user logs out
  */
