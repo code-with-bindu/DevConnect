@@ -26,6 +26,8 @@ import {
   offConnectionRequestNew,
   onConnectionRequestDecision,
   offConnectionRequestDecision,
+  onProjectChatNotification,
+  offProjectChatNotification,
   getSocket,
 } from "../utils/socketClient";
 import {
@@ -260,6 +262,24 @@ const Body = () => {
       );
     });
 
+    // Project group chat: a new message arrived in a workspace you're on but
+    // aren't currently looking at — surface a clickable toast.
+    onProjectChatNotification((data) => {
+      const onWorkspace =
+        window.location.pathname === `/projects/${data.projectId}/workspace`;
+      if (onWorkspace) return;
+      dispatch(
+        pushToast({
+          level: "info",
+          icon: "💬",
+          title: `${data.sender?.firstName || "Someone"} in "${data.title}"`,
+          body: data.preview,
+          photoUrl: data.sender?.photoUrl,
+          to: `/projects/${data.projectId}/workspace`,
+        })
+      );
+    });
+
     // Connection request decision: someone accepted/rejected yours
     onConnectionRequestDecision((data) => {
       const accepted = data.decision === "accepted";
@@ -290,6 +310,7 @@ const Body = () => {
       offProjectActivity();
       offConnectionRequestNew();
       offConnectionRequestDecision();
+      offProjectChatNotification();
       sock?.off("connect", onConnect);
     };
   }, [userData?._id, dispatch]);

@@ -208,6 +208,41 @@ export const offUserStatusUpdate = () =>
   socket && socket.off("userStatusUpdate");
 
 /**
+ * Project workspace room — for live group chat + task updates
+ */
+export const joinProjectRoom = (projectId) => {
+  if (socket) socket.emit("joinProjectRoom", { projectId });
+};
+export const leaveProjectRoom = (projectId) => {
+  if (socket) socket.emit("leaveProjectRoom", { projectId });
+};
+
+export const onProjectChatMessage = (cb) =>
+  socket && socket.on("projectChatMessage", cb);
+export const offProjectChatMessage = () =>
+  socket && socket.off("projectChatMessage");
+
+export const onProjectChatNotification = (cb) =>
+  socket && socket.on("projectChatNotification", cb);
+export const offProjectChatNotification = () =>
+  socket && socket.off("projectChatNotification");
+
+export const onProjectTaskAdded = (cb) =>
+  socket && socket.on("projectTaskAdded", cb);
+export const offProjectTaskAdded = () =>
+  socket && socket.off("projectTaskAdded");
+
+export const onProjectTaskUpdated = (cb) =>
+  socket && socket.on("projectTaskUpdated", cb);
+export const offProjectTaskUpdated = () =>
+  socket && socket.off("projectTaskUpdated");
+
+export const onProjectTaskDeleted = (cb) =>
+  socket && socket.on("projectTaskDeleted", cb);
+export const offProjectTaskDeleted = () =>
+  socket && socket.off("projectTaskDeleted");
+
+/**
  * Disconnect socket
  * Called when user logs out
  */

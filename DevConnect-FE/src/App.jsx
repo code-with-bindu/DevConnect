@@ -11,6 +11,7 @@ import Requests from "./components/Requests";
 import Chat from "./components/Chat";
 import Notifications from "./components/Notifications";
 import Projects from "./components/Projects";
+import ProjectWorkspace from "./components/ProjectWorkspace";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="chat/:userId" element={<Chat />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="projects" element={<Projects />} />
+            <Route path="projects/:id/workspace" element={<ProjectWorkspace />} />
           </Route>
         </Routes>
       </BrowserRouter>

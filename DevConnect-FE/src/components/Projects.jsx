@@ -370,6 +370,21 @@ const Projects = () => {
                     </a>
                   )}
 
+                  {/* Workspace entry — visible to owner + accepted members */}
+                  {(isOwner || myInterest?.status === "accepted") && (
+                    <Link
+                      to={`/projects/${p._id}/workspace`}
+                      className="mb-3 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-100 hover:from-primary-100 hover:to-accent-100 transition group"
+                    >
+                      <span className="text-xs font-bold text-primary-700">
+                        🚀 Open Team Workspace
+                      </span>
+                      <span className="text-xs text-primary-600 group-hover:translate-x-0.5 transition-transform">
+                        chat · tasks · members →
+                      </span>
+                    </Link>
+                  )}
+
                   <div className="mt-auto pt-4 border-t border-neutral-100 flex items-center gap-2">
                     <img
                       src={p.createdBy?.photoUrl || "https://placehold.co/40"}
