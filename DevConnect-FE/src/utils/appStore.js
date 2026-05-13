@@ -7,6 +7,7 @@ import notificationReducer from "./notificationSlice";
 import activeConversationReducer from "./activeConversationSlice";
 import presenceReducer from "./presenceSlice";
 import toastReducer from "./toastSlice";
+import darkReducer from "./darkSlice";
 
 const appStore = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ const appStore = configureStore({
     activeConversation: activeConversationReducer,
     presence: presenceReducer,
     toast: toastReducer,
+    dark: darkReducer,
   },
 });
 

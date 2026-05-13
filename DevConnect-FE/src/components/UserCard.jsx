@@ -5,7 +5,7 @@ import { useDispatch } from "react-redux";
 import { removeUserFromFeed } from "../utils/feedSlice";
 
 const UserCard = ({ user, onNext }) => {
-  const { _id, firstName, about, photoUrl, age, gender } = user;
+  const { _id, firstName, about, photoUrl, age, gender, openToCollab } = user;
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
@@ -84,13 +84,16 @@ const UserCard = ({ user, onNext }) => {
           <p className="text-neutral-700 text-base font-medium leading-relaxed line-clamp-3 hover:line-clamp-none transition-all duration-300">
             "{about || "Passionate developer exploring new connections and amazing projects..."}"
           </p>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <span className="px-3 py-1 bg-primary-100 text-primary-700 text-xs font-semibold rounded-full border border-primary-200">
               💡 Available
             </span>
-            <span className="px-3 py-1 bg-accent-100 text-accent-700 text-xs font-semibold rounded-full border border-accent-200">
-              🚀 Open to Projects
-            </span>
+            {openToCollab && (
+              <span className="px-3 py-1 bg-gradient-to-r from-accent-100 to-primary-100 text-primary-700 text-xs font-semibold rounded-full border border-primary-200 flex items-center gap-1 animate-pulse-soft">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                Open to Collab
+              </span>
+            )}
           </div>
         </div>
 

@@ -8,11 +8,53 @@
   html {
     @apply scroll-smooth;
     scroll-behavior: smooth;
+    transition: background-color 0.3s, color 0.3s;
   }
 
   body {
     @apply bg-gradient-to-br from-neutral-50 via-white to-neutral-50 text-neutral-900 font-sans antialiased;
     background-attachment: fixed;
+  }
+
+  /* ─── Dark mode overrides ─── */
+  .dark body {
+    @apply bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 text-neutral-100;
+  }
+
+  .dark .card-base {
+    @apply bg-neutral-800/80 border-neutral-700/40 shadow-neutral-900/40;
+  }
+
+  .dark .card-elevated {
+    @apply bg-neutral-800/90 border-neutral-700/30 shadow-neutral-900/60;
+  }
+
+  .dark .card-gradient {
+    @apply from-neutral-800/80 to-neutral-900/80 border-neutral-700/40;
+  }
+
+  .dark .btn-ghost {
+    @apply text-neutral-300 hover:bg-neutral-700;
+  }
+
+  .dark .btn-outline {
+    @apply text-primary-400 border-primary-400 hover:bg-primary-500/10;
+  }
+
+  .dark .input-base {
+    @apply bg-neutral-800/50 border-neutral-600 text-neutral-100 placeholder:text-neutral-500 hover:bg-neutral-800;
+  }
+
+  .dark .badge-primary {
+    @apply from-primary-900/60 to-primary-800/40 text-primary-300 border-primary-700/50;
+  }
+
+  .dark .glass {
+    @apply bg-white/5 border-white/10;
+  }
+
+  .dark .glass-light {
+    @apply bg-white/10 border-white/15;
   }
 
   h1,

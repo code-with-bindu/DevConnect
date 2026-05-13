@@ -38,6 +38,14 @@ const emptyForm = {
   location: "Remote",
 };
 
+/** Compute skill match score (0-100) between user skills and project skillsNeeded */
+function skillMatchScore(userSkills = [], projectSkills = []) {
+  if (!projectSkills.length) return null;
+  const uLower = userSkills.map((s) => s.toLowerCase());
+  const matched = projectSkills.filter((s) => uLower.includes(s.toLowerCase())).length;
+  return Math.round((matched / projectSkills.length) * 100);
+}
+
 const Projects = () => {
   const me = useSelector((s) => s.user);
   const [projects, setProjects] = useState([]);
@@ -53,6 +61,11 @@ const Projects = () => {
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [activity, setActivity] = useState([]); // last few real-time events
+
+  // Quick Apply modal state
+  const [applyProject, setApplyProject] = useState(null); // project being applied to
+  const [pitch, setPitch] = useState("");
+  const [applying, setApplying] = useState(false);
 
   const fetchProjects = async () => {
     try {
@@ -135,6 +148,27 @@ const Projects = () => {
       alert(err.response?.data?.message || err.message);
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const applyWithPitch = async () => {
+    if (!applyProject) return;
+    try {
+      setApplying(true);
+      const res = await axios.post(
+        `${BASE_URL}/projects/${applyProject._id}/interest`,
+        { message: pitch.trim() },
+        { withCredentials: true }
+      );
+      setProjects((prev) =>
+        prev.map((p) => (p._id === applyProject._id ? res.data.data : p))
+      );
+      setApplyProject(null);
+      setPitch("");
+    } catch (err) {
+      alert(err.response?.data?.message || err.message);
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -317,6 +351,8 @@ const Projects = () => {
               const deadlineSoon =
                 p.deadline && new Date(p.deadline) - new Date() < 7 * 24 * 3600 * 1000;
 
+              const score = skillMatchScore(me?.skills, p.skillsNeeded);
+
               return (
                 <div key={p._id} className="card-elevated p-6 hover-lift animate-pop-in flex flex-col">
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -327,11 +363,27 @@ const Projects = () => {
                     >
                       {p.category}
                     </span>
-                    {p.deadline && (
-                      <span className={`text-xs font-semibold ${deadlineSoon ? "text-red-600" : "text-neutral-500"}`}>
-                        ⏰ {new Date(p.deadline).toLocaleDateString()}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {score !== null && !isOwner && (
+                        <span
+                          className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                            score >= 70
+                              ? "bg-green-100 text-green-700 border-green-200"
+                              : score >= 40
+                              ? "bg-amber-100 text-amber-700 border-amber-200"
+                              : "bg-neutral-100 text-neutral-500 border-neutral-200"
+                          }`}
+                          title={`Your skills match ${score}% of what this project needs`}
+                        >
+                          {score >= 70 ? "🔥" : score >= 40 ? "✨" : "💡"} {score}% match
+                        </span>
+                      )}
+                      {p.deadline && (
+                        <span className={`text-xs font-semibold ${deadlineSoon ? "text-red-600" : "text-neutral-500"}`}>
+                          ⏰ {new Date(p.deadline).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <h3 className="text-xl font-bold text-neutral-900 leading-snug mb-2">
@@ -407,7 +459,14 @@ const Projects = () => {
                       </button>
                     ) : (
                       <button
-                        onClick={() => toggleInterest(p)}
+                        onClick={() => {
+                          if (!myInterest) {
+                            setApplyProject(p);
+                            setPitch("");
+                          } else {
+                            toggleInterest(p);
+                          }
+                        }}
                         disabled={busyId === p._id}
                         className={`text-xs px-3 py-1.5 rounded-lg font-semibold ${
                           myInterest
@@ -425,7 +484,7 @@ const Projects = () => {
                             : myInterest.status === "rejected"
                             ? "✗ Declined"
                             : "⏳ Withdraw"
-                          : "🤝 I'm Interested"}
+                          : "🤝 Quick Apply"}
                       </button>
                     )}
                   </div>
@@ -476,6 +535,81 @@ const Projects = () => {
           </div>
         )}
       </div>
+
+      {/* Quick Apply modal */}
+      {applyProject && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-pop-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-neutral-900">🤝 Quick Apply</h2>
+                <p className="text-sm text-neutral-500 mt-0.5 line-clamp-1">
+                  {applyProject.title}
+                </p>
+              </div>
+              <button
+                onClick={() => { setApplyProject(null); setPitch(""); }}
+                className="text-2xl text-neutral-400 hover:text-neutral-600 leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Skill match reminder */}
+              {(() => {
+                const s = skillMatchScore(me?.skills, applyProject.skillsNeeded);
+                return s !== null ? (
+                  <div className={`flex items-center gap-3 p-3 rounded-xl text-sm font-semibold border ${
+                    s >= 70 ? "bg-green-50 border-green-200 text-green-700"
+                    : s >= 40 ? "bg-amber-50 border-amber-200 text-amber-700"
+                    : "bg-neutral-50 border-neutral-200 text-neutral-600"
+                  }`}>
+                    <span className="text-2xl">{s >= 70 ? "🔥" : s >= 40 ? "✨" : "💡"}</span>
+                    <div>
+                      <div>Your skills match <strong>{s}%</strong> of what's needed</div>
+                      {applyProject.skillsNeeded?.length > 0 && (
+                        <div className="font-normal text-xs mt-0.5 opacity-80">
+                          Needed: {applyProject.skillsNeeded.join(", ")}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
+              <div>
+                <label className="block text-sm font-bold text-neutral-700 mb-2">
+                  Your personal pitch <span className="font-normal text-neutral-400">(optional)</span>
+                </label>
+                <textarea
+                  rows={5}
+                  value={pitch}
+                  onChange={(e) => setPitch(e.target.value)}
+                  placeholder="Tell the owner why you'd be a great fit — your relevant experience, what you'd bring to the team, or anything that makes you stand out..."
+                  className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none text-sm"
+                />
+                <div className="text-xs text-neutral-400 mt-1 text-right">{pitch.length}/500 chars</div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={applyWithPitch}
+                  disabled={applying}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white font-bold shadow hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60"
+                >
+                  {applying ? "Sending..." : "🚀 Send Application"}
+                </button>
+                <button
+                  onClick={() => { setApplyProject(null); setPitch(""); }}
+                  className="px-5 py-3 rounded-xl border border-neutral-200 text-neutral-600 font-semibold hover:bg-neutral-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create modal */}
       {showCreate && (

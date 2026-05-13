@@ -38,6 +38,55 @@ import {
 import { pushToast } from "../utils/toastSlice";
 import Toaster from "./Toaster";
 
+/** Canvas confetti burst — no external library needed */
+function launchConfetti() {
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText =
+    "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981","#3b82f6","#f43f5e"];
+  const pieces = Array.from({ length: 140 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height * -0.3,
+    r: Math.random() * 6 + 4,
+    dx: (Math.random() - 0.5) * 3,
+    dy: Math.random() * 4 + 2,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    angle: Math.random() * 360,
+    spin: (Math.random() - 0.5) * 8,
+    opacity: 1,
+  }));
+
+  let frame = 0;
+  const maxFrames = 120;
+
+  const tick = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame++;
+    pieces.forEach((p) => {
+      p.x += p.dx;
+      p.y += p.dy;
+      p.angle += p.spin;
+      p.dy += 0.07; // gravity
+      if (frame > maxFrames * 0.6) p.opacity -= 0.025;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.opacity);
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.angle * Math.PI) / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 2.2);
+      ctx.restore();
+    });
+    if (frame < maxFrames) requestAnimationFrame(tick);
+    else canvas.remove();
+  };
+  requestAnimationFrame(tick);
+}
+
 const Body = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -216,6 +265,7 @@ const Body = () => {
     // Project: owner accepted/rejected your application
     onProjectDecision((data) => {
       const accepted = data.decision === "accepted";
+      if (accepted) launchConfetti();
       dispatch(
         pushToast({
           level: accepted ? "success" : "warning",

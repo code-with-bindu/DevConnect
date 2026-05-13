@@ -4,10 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
 import axios from "axios";
 import { removeUser } from "../utils/userSlice";
+import { toggleDark } from "../utils/darkSlice";
 
 const NavBar = () => {
   const user = useSelector((store) => store.user);
   const unreadCount = useSelector((store) => store.notification.totalUnread);
+  const dark = useSelector((store) => store.dark.dark);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -179,6 +181,15 @@ const NavBar = () => {
                   </div>
                 )}
               </div>
+
+              {/* Dark mode toggle */}
+              <button
+                onClick={() => dispatch(toggleDark())}
+                title={dark ? "Switch to light mode" : "Switch to dark mode"}
+                className="p-3 rounded-full hover:bg-neutral-100/50 dark:hover:bg-neutral-700/50 transition-all duration-300 glass text-xl"
+              >
+                {dark ? "☀️" : "🌙"}
+              </button>
 
               {/* Mobile Menu Button */}
               <button

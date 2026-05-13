@@ -21,6 +21,7 @@ const EditProfile = () => {
     age: "",
     gender: "",
     about: "",
+    openToCollab: false,
   });
 
   const [error, setError] = useState("");
@@ -38,6 +39,7 @@ const EditProfile = () => {
         age: user.age || "",
         gender: user.gender || "",
         about: user.about || "",
+        openToCollab: !!user.openToCollab,
       });
     }
   }, [user]);
@@ -306,6 +308,31 @@ const EditProfile = () => {
                     className="input-base px-4 py-3 w-full resize-none"
                   />
                 </div>
+              </div>
+
+              {/* Open to Collab toggle */}
+              <div className="mt-6 p-4 rounded-2xl border border-accent-200 bg-gradient-to-r from-accent-50/60 to-primary-50/60 flex items-center justify-between gap-4">
+                <div>
+                  <div className="font-bold text-neutral-800 flex items-center gap-2">
+                    <span className="text-lg">🤝</span> Open to Collaborate
+                  </div>
+                  <div className="text-xs text-neutral-500 mt-0.5">
+                    Show a badge on your profile letting others know you're actively looking for team projects.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newVal = !form.openToCollab;
+                    setForm((p) => ({ ...p, openToCollab: newVal }));
+                    setDirtyFields((p) => ({ ...p, openToCollab: newVal !== !!user?.openToCollab }));
+                  }}
+                  className={`relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 ${
+                    form.openToCollab ? "bg-gradient-to-r from-primary-500 to-accent-500" : "bg-neutral-300"
+                  }`}
+                >
+                  <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${form.openToCollab ? "left-8" : "left-1"}`} />
+                </button>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 mt-8">
