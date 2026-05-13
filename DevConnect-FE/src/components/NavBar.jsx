@@ -35,7 +35,7 @@ const NavBar = () => {
   ];
 
   return (
-    <nav className="fixed w-full top-0 z-50 bg-gradient-to-b from-white/80 via-white/60 to-transparent backdrop-blur-xl border-b border-white/20 transition-all duration-300">
+    <nav className="fixed w-full top-0 z-50 bg-gradient-to-b from-white/80 via-white/60 to-transparent dark:from-slate-900/95 dark:via-slate-900/80 dark:to-transparent backdrop-blur-xl border-b border-white/20 dark:border-slate-700/50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20 md:h-24">
           {/* Logo */}
@@ -133,11 +133,11 @@ const NavBar = () => {
 
                 {/* Profile Dropdown Menu */}
                 {profileMenuOpen && (
-                  <div className="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-neutral-500/20 border border-white/40 overflow-hidden animate-slide-down">
+                  <div className="absolute right-0 mt-3 w-64 bg-white/95 dark:bg-slate-900/97 backdrop-blur-xl rounded-2xl shadow-2xl shadow-neutral-500/20 border border-white/40 dark:border-slate-700/50 overflow-hidden animate-slide-down">
                     {/* Header */}
-                    <div className="px-6 py-4 bg-gradient-to-r from-primary-500/10 to-accent-500/10 border-b border-white/20">
-                      <p className="font-bold text-neutral-900">Welcome back!</p>
-                      <p className="text-sm text-neutral-600 mt-1">@{user.firstName}</p>
+                    <div className="px-6 py-4 bg-gradient-to-r from-primary-500/10 to-accent-500/10 dark:from-primary-500/20 dark:to-accent-500/15 border-b border-white/20 dark:border-slate-700/50">
+                      <p className="font-bold text-neutral-900 dark:text-slate-100">Welcome back!</p>
+                      <p className="text-sm text-neutral-600 dark:text-slate-400 mt-1">@{user.firstName}</p>
                     </div>
 
                     {/* Menu Items */}
@@ -145,23 +145,23 @@ const NavBar = () => {
                       <Link
                         to="/profile/view"
                         onClick={() => setProfileMenuOpen(false)}
-                        className="flex items-center gap-4 w-full px-6 py-4 text-neutral-700 hover:bg-primary-50/50 hover:text-primary-600 transition-all duration-300 border-b border-neutral-100/50 group"
+                        className="flex items-center gap-4 w-full px-6 py-4 text-neutral-700 dark:text-slate-300 hover:bg-primary-50/50 dark:hover:bg-slate-800 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 border-b border-neutral-100/50 dark:border-slate-700/40 group"
                       >
                         <span className="text-2xl group-hover:scale-125 transition-transform duration-300">👤</span>
                         <div>
                           <p className="font-semibold">View Profile</p>
-                          <p className="text-xs text-neutral-500">See your public profile</p>
+                          <p className="text-xs text-neutral-500 dark:text-slate-500">See your public profile</p>
                         </div>
                       </Link>
                       <Link
                         to="/profile/edit"
                         onClick={() => setProfileMenuOpen(false)}
-                        className="flex items-center gap-4 w-full px-6 py-4 text-neutral-700 hover:bg-accent-50/50 hover:text-accent-600 transition-all duration-300 border-b border-neutral-100/50 group"
+                        className="flex items-center gap-4 w-full px-6 py-4 text-neutral-700 dark:text-slate-300 hover:bg-accent-50/50 dark:hover:bg-slate-800 hover:text-accent-600 dark:hover:text-accent-400 transition-all duration-300 border-b border-neutral-100/50 dark:border-slate-700/40 group"
                       >
                         <span className="text-2xl group-hover:scale-125 transition-transform duration-300">✏️</span>
                         <div>
                           <p className="font-semibold">Edit Profile</p>
-                          <p className="text-xs text-neutral-500">Update your information</p>
+                          <p className="text-xs text-neutral-500 dark:text-slate-500">Update your information</p>
                         </div>
                       </Link>
                       <button
@@ -169,7 +169,7 @@ const NavBar = () => {
                           handleLogout();
                           setProfileMenuOpen(false);
                         }}
-                        className="flex items-center gap-4 w-full px-6 py-4 text-red-600 hover:bg-red-50 transition-all duration-300 font-semibold group"
+                        className="flex items-center gap-4 w-full px-6 py-4 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-300 font-semibold group"
                       >
                         <span className="text-2xl group-hover:scale-125 transition-transform duration-300">🚪</span>
                         <div>
@@ -182,22 +182,13 @@ const NavBar = () => {
                 )}
               </div>
 
-              {/* Dark mode toggle */}
-              <button
-                onClick={() => dispatch(toggleDark())}
-                title={dark ? "Switch to light mode" : "Switch to dark mode"}
-                className="p-3 rounded-full hover:bg-neutral-100/50 dark:hover:bg-neutral-700/50 transition-all duration-300 glass text-xl"
-              >
-                {dark ? "☀️" : "🌙"}
-              </button>
-
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="md:hidden p-3 hover:bg-neutral-100/50 rounded-lg transition-all duration-300 glass"
+                className="md:hidden p-3 hover:bg-neutral-100/50 dark:hover:bg-slate-700/50 rounded-lg transition-all duration-300 glass"
               >
                 <svg
-                  className={`w-6 h-6 text-neutral-700 transition-transform duration-300 ${
+                  className={`w-6 h-6 text-neutral-700 dark:text-slate-300 transition-transform duration-300 ${
                     menuOpen ? "rotate-90" : ""
                   }`}
                   fill="none"
@@ -223,6 +214,15 @@ const NavBar = () => {
               </Link>
             </div>
           )}
+
+          {/* Dark mode toggle — always visible */}
+          <button
+            onClick={() => dispatch(toggleDark())}
+            title={dark ? "Switch to light mode" : "Switch to dark mode"}
+            className="p-2.5 rounded-full border border-white/30 dark:border-slate-600/50 bg-white/20 dark:bg-slate-800/60 hover:bg-white/40 dark:hover:bg-slate-700/80 backdrop-blur-sm transition-all duration-300 text-lg leading-none shadow-sm"
+          >
+            {dark ? "☀️" : "🌙"}
+          </button>
         </div>
       </div>
     </nav>
